@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_app_packager/src/api/app_package_maker.dart';
+import 'package:intl/intl.dart';
 
 class MakeRPMConfig extends MakeConfig {
   MakeRPMConfig({
@@ -105,6 +106,10 @@ class MakeRPMConfig extends MakeConfig {
 
   @override
   Map<String, dynamic> toJson() {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEE MMM dd yyyy').format(now);
+    final rpmVersion = appVersion.toString();
+
     return {
       'SPEC': {
         'preamble': {
@@ -131,12 +136,13 @@ class MakeRPMConfig extends MakeConfig {
             'mkdir -p %{buildroot}%{_datadir}/applications',
             'mkdir -p %{buildroot}%{_datadir}/metainfo',
             'mkdir -p %{buildroot}%{_datadir}/pixmaps',
-            'cp -r %{name}/* %{buildroot}%{_datadir}/%{name}',
+            'cp -r ../%{name}/* %{buildroot}%{_datadir}/%{name}',
             'ln -s %{_datadir}/%{name}/%{name} %{buildroot}%{_bindir}/%{name}',
-            'cp -r %{name}.desktop %{buildroot}%{_datadir}/applications',
-            'cp -r %{name}.png %{buildroot}%{_datadir}/pixmaps',
-            'cp -r %{name}*.xml %{buildroot}%{_datadir}/metainfo || :',
+            'cp -r ../%{name}.desktop %{buildroot}%{_datadir}/applications',
+            'cp -r ../%{name}.png %{buildroot}%{_datadir}/pixmaps',
+            'cp -r ../%{name}*.xml %{buildroot}%{_datadir}/metainfo || :',
             'update-mime-database %{_datadir}/mime &> /dev/null || :',
+            '%undefine __brp_add_determinism',
           ].join('\n'),
           '%postun': ['update-mime-database %{_datadir}/mime &> /dev/null || :']
               .join('\n'),
@@ -150,6 +156,8 @@ class MakeRPMConfig extends MakeConfig {
         'inline-body': {
           '%defattr': '(-,root,root)',
           '%attr': '(4755, root, root) %{_datadir}/pixmaps/%{name}.png',
+          '%changelog':
+              '\n* $formattedDate $packager <$packagerEmail> - $rpmVersion\n- $changelog',
         },
       },
       'DESKTOP': {
