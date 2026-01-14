@@ -114,7 +114,7 @@ class MakeRPMConfig extends MakeConfig {
       'SPEC': {
         'preamble': {
           'Name': appName,
-          'Version': appVersion.toString(),
+          'Version': rpmVersion.replaceAll('-', '_'),
           'Release':
               "${appVersion.build.isNotEmpty ? appVersion.build.first : "1"}%{?dist}",
           'Summary': summary ?? pubspec.description,
