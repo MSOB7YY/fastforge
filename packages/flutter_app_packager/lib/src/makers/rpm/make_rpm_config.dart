@@ -37,6 +37,7 @@ class MakeRPMConfig extends MakeConfig {
     this.attr,
     this.changelog,
     this.packageName,
+    this.postInstallSymlinks,
   });
 
   factory MakeRPMConfig.fromJson(Map<String, dynamic> json) {
@@ -71,6 +72,9 @@ class MakeRPMConfig extends MakeConfig {
       attr: json['attr'] as String?,
       changelog: json['changelog'] as String?,
       packageName: json['package_name'] as String?,
+      postInstallSymlinks: json['post_install_symlinks'] != null
+          ? Map<String, String>.from(json['post_install_symlinks'])
+          : null,
     );
   }
 
@@ -108,6 +112,7 @@ class MakeRPMConfig extends MakeConfig {
 
   // RPM ln bug fix
   String? packageName;
+  final Map<String, String>? postInstallSymlinks;
 
   @override
   Map<String, dynamic> toJson() {
@@ -150,6 +155,10 @@ class MakeRPMConfig extends MakeConfig {
             'find %{buildroot}%{_datadir}/%{name}/lib -name "*.so" -type f -exec patchelf --remove-rpath {} \\; 2>/dev/null || true',
             '%undefine __brp_add_determinism',
           ].join('\n'),
+          '%post':
+              postInstallSymlinks != null && postInstallSymlinks!.isNotEmpty
+                  ? _generateSymlinkScript(postInstallSymlinks!)
+                  : null,
           '%postun': ['update-mime-database %{_datadir}/mime &> /dev/null || :']
               .join('\n'),
           '%files': [
@@ -219,6 +228,18 @@ class MakeRPMConfig extends MakeConfig {
       'SPEC': '$preamble\n\n$body\n\n$inlineBody',
     };
     return Map.castFrom<String, String?, String, String>(map);
+  }
+
+  String _generateSymlinkScript(Map<String, String> symlinks) {
+    final lines = <String>[];
+    for (var entry in symlinks.entries) {
+      lines.addAll([
+        'if [ ! -e ${entry.key} ]; then',
+        '    ln -s ${entry.value} ${entry.key}',
+        'fi',
+      ]);
+    }
+    return lines.join('\n');
   }
 }
 
