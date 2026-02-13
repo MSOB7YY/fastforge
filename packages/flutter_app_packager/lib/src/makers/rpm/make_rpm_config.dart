@@ -147,6 +147,7 @@ class MakeRPMConfig extends MakeConfig {
             'cp -r ../%{name}.png %{buildroot}%{_datadir}/pixmaps',
             'cp -r ../%{name}*.xml %{buildroot}%{_datadir}/metainfo || :',
             'update-mime-database %{_datadir}/mime &> /dev/null || :',
+            'find %{buildroot}%{_datadir}/%{name}/lib -name "*.so" -type f -exec patchelf --remove-rpath {} \\; 2>/dev/null || true',
             '%undefine __brp_add_determinism',
           ].join('\n'),
           '%postun': ['update-mime-database %{_datadir}/mime &> /dev/null || :']
