@@ -147,12 +147,13 @@ class MakeRPMConfig extends MakeConfig {
             'mkdir -p %{buildroot}%{_datadir}/metainfo',
             'mkdir -p %{buildroot}%{_datadir}/pixmaps',
             'cp -r ../%{name}/* %{buildroot}%{_datadir}/%{name}',
+            'chmod +x %{buildroot}%{_datadir}/%{name}/bin/* || true',
+            'chmod +x %{buildroot}%{_datadir}/%{name}/${packageName ?? "%{name}"} || true',
             'ln -s %{_datadir}/%{name}/${packageName ?? "%{name}"} %{buildroot}%{_bindir}/%{name}',
             'cp -r ../%{name}.desktop %{buildroot}%{_datadir}/applications',
             'cp -r ../%{name}.png %{buildroot}%{_datadir}/pixmaps',
             'cp -r ../%{name}*.xml %{buildroot}%{_datadir}/metainfo || :',
             'update-mime-database %{_datadir}/mime &> /dev/null || :',
-            'find %{buildroot}%{_datadir}/%{name}/lib -name "*.so" -type f -exec patchelf --remove-rpath {} \\; 2>/dev/null || true',
             '%undefine __brp_add_determinism',
           ].join('\n'),
           '%post':
@@ -234,6 +235,9 @@ class MakeRPMConfig extends MakeConfig {
     final lines = <String>[];
     for (var entry in symlinks.entries) {
       lines.addAll([
+        'if [ -L ${entry.key} ]; then',
+        '    rm -f ${entry.key} || true',
+        'fi',
         'if [ ! -e ${entry.key} ]; then',
         '    ln -s ${entry.value} ${entry.key}',
         'fi',
